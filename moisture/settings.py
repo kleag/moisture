@@ -25,19 +25,20 @@ SECRET_KEY = 'django-insecure-x75d$)^!&nrtnzf(6@5y+#10!8-=0qulwphg5ct2-ohfgs9!$i
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
+          'django.contrib.auth',
+           'django.contrib.contenttypes',
+            'django.contrib.sessions',
+             'django.contrib.messages',
+             'django.contrib.staticfiles',
+          'rest_framework',
+    'moistureduino.apps.MoistureduinoConfig',
 ]
 
 MIDDLEWARE = [
@@ -130,5 +131,7 @@ REST_FRAMEWORK = {
     # or allow read-only access for unauthenticated users.
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
-    ]
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10
 }
