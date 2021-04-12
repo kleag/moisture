@@ -25,3 +25,7 @@ router = routers.DefaultRouter()
 urlpatterns = [
     path('', include('moistureduino.urls')),
 ]
+
+urlpatterns += [
+    path('api-auth/', include('rest_framework.urls')),
+]

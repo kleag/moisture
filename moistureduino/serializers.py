@@ -1,3 +1,5 @@
+from django.contrib.auth.models import User
+
 from rest_framework import serializers
 from moistureduino.models import Entry
 
@@ -25,6 +27,15 @@ from moistureduino.models import Entry
 #        return instance
 
 class EntrySerializer(serializers.ModelSerializer):
+    owner = serializers.ReadOnlyField(source='owner.username')
     class Meta:
         model = Entry
-        fields = ['created', 'kind', 'value']
+        fields = ['created', 'kind', 'value', 'owner']
+
+
+class UserSerializer(serializers.ModelSerializer):
+    entries = serializers.PrimaryKeyRelatedField(many=True, queryset=Entry.objects.all())
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'entries']
