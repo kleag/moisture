@@ -56,7 +56,7 @@ ROOT_URLCONF = 'moisture.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': ['moistureduino/templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
