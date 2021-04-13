@@ -26,16 +26,20 @@ from moistureduino.models import Entry
 #        instance.save()
 #        return instance
 
-class EntrySerializer(serializers.ModelSerializer):
+class EntrySerializer(serializers.HyperlinkedModelSerializer):
     owner = serializers.ReadOnlyField(source='owner.username')
+    highlight = serializers.HyperlinkedIdentityField(
+        view_name='entry-highlight', format='html')
     class Meta:
         model = Entry
-        fields = ['created', 'kind', 'value', 'owner']
+        fields = ['url', 'id', 'highlight', 'owner',
+                  'created', 'kind', 'value']
 
 
-class UserSerializer(serializers.ModelSerializer):
-    entries = serializers.PrimaryKeyRelatedField(many=True, queryset=Entry.objects.all())
+class UserSerializer(serializers.HyperlinkedModelSerializer):
+    entries = serializers.HyperlinkedRelatedField(many=True, view_name='entry-detail', read_only=True)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'entries']
+        fields = ['url', 'id', 'username', 'entries']
+
