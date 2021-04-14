@@ -1,3 +1,4 @@
+from django.core.mail import EmailMessage
 from django.contrib.auth.models import User
 from rest_framework import mixins
 from rest_framework import generics
@@ -114,6 +115,18 @@ class EntryViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
+    @action(detail=False, permission_classes=[permissions.IsAuthenticated])
+    def alert(self, request, *args, **kwargs):
+        email = EmailMessage(
+            'Moisture alert',
+            ("This is an alert from your plant moisture management system. It "
+             "is sent when the moisturing does not occur as expected. Please "
+             "check your system."),
+            'kleagg@gmail.com',
+            ['kleagg@gmail.com'],
+        )
+        email.send()
+        return Response()
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     """
