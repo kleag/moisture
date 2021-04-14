@@ -1,3 +1,4 @@
+arduino_secrets.h
 moistureduino/migrations
 migrations
 *.kdev4
