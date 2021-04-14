@@ -1,3 +1,5 @@
+*.lock
+environment.ini
 arduino_secrets.h
 moistureduino/migrations
 migrations
