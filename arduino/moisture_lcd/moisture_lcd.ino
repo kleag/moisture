@@ -127,6 +127,33 @@ int postEntry(const String& kind, int value) {
   return statusCode;
 }
 
+int postAlert() {
+  String postData;
+
+  Serial.print("making POST alert request: ");
+  client.beginRequest();
+  int post_result = client.post("/entries/alert/");
+  Serial.print("Post url set: ");
+  Serial.println(post_result);
+  client.sendHeader("Content-Type", contentType);
+  client.sendHeader("Content-Length", postData.length());
+  Serial.println("Headers ready");
+  client.sendBasicAuth(login, password); // send the username and password for authentication
+  Serial.println("Basic auth sent");
+  client.beginBody();
+  client.print(postData);
+  Serial.println("Body written");
+  client.endRequest();
+  Serial.println("Request sent");
+
+
+  // read the status code and body of the response
+  int statusCode = client.responseStatusCode();
+  Serial.print("Status code: ");
+  Serial.println(statusCode);
+  return statusCode;
+}
+
 /** handle diagnostic informations given by assertion and abort program
  * execution:
  */
@@ -222,6 +249,7 @@ void alert() {
   Serial.println(buffer);
   lcd.print(buffer);
   postEntry("alert", 0);
+  postAlert();
 }
 
 void loop() {
