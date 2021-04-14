@@ -3,11 +3,13 @@ from rest_framework import mixins
 from rest_framework import generics
 from rest_framework import permissions
 from rest_framework import renderers
+from rest_framework import status
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework.reverse import reverse_lazy
 
 from plotly.offline import plot
 from plotly.graph_objs import Scatter
@@ -25,12 +27,22 @@ class EntryViewSet(viewsets.ModelViewSet):
     This viewset automatically provides `list`, `create`, `retrieve`,
     `update` and `destroy` actions.
 
-    Additionally we also provide an extra `highlight` action.
+    Additionally we also provide extra `highlight`, `table`, `plot` and
+    `reset` actions.
     """
     queryset = Entry.objects.all()
     serializer_class = EntrySerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly,
                           IsOwnerOrReadOnly]
+
+    @action(detail=False,
+            permission_classes=[permissions.IsAuthenticated])
+    def reset(self, request, *args, **kwargs):
+        entries = Entry.objects.all()
+        for entry in entries:
+            entry.delete()
+        api_root = reverse_lazy('api-root', request=request)
+        return Response(status=status.HTTP_204_NO_CONTENT, data=api_root)
 
     @action(detail=True, renderer_classes=[renderers.StaticHTMLRenderer])
     def highlight(self, request, *args, **kwargs):
