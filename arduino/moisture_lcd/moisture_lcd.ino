@@ -45,7 +45,7 @@ const int PUMP_DELAY = 60;
 // [ALERT_MIN, ALERT_MAX] interval in minutes
 const int ALERT_MIN = 5;
 const int ALERT_MAX = 20;
-// Duratio of a pumping event in secondes
+// Duratio of a pumping event in seconds
 const int PUMPING_DURATION = 1;
 
 
@@ -62,10 +62,11 @@ const String password = SECRET_PASSWORD;  // your Web service user password
 
 WiFiClient wifi;
 HttpClient client = HttpClient(wifi, serverAddress, port);
-int status = WL_IDLE_STATUS;
 const String contentType = "application/x-www-form-urlencoded";
 
+/** Connect to the WiFi network */
 void connectWifi() {
+  int status = WL_IDLE_STATUS;
   while ( status != WL_CONNECTED) {
     Serial.print("Attempting to connect to Network named: ");
     Serial.println(ssid);                   // print the network name (SSID);
@@ -84,7 +85,13 @@ void connectWifi() {
   Serial.println(ip);
 }
 
-
+/** Post a message to the /entries/ API endpoint of the Web service
+ * @param kind the type of the message. Should be one in [moisture, pump_time,
+ * alert]
+ * @param value int. Percent for moisture kind, duration in seconds for
+ * pump_time and 0 for alert.
+ * @return int. The status returned by the Web service
+ */
 int postEntry(const String& kind, int value) {
   assert(kind.length() < 30);
   char buffer[30];
@@ -120,7 +127,9 @@ int postEntry(const String& kind, int value) {
   return statusCode;
 }
 
-// handle diagnostic informations given by assertion and abort program execution:
+/** handle diagnostic informations given by assertion and abort program
+ * execution:
+ */
 void __assert(const char *__func, const char *__file, int __lineno, const char *__sexp) {
     Serial.println(__func);
     Serial.println(__file);
@@ -130,23 +139,28 @@ void __assert(const char *__func, const char *__file, int __lineno, const char *
     abort();
 }
 
-// Last pumping time in milliseconds
+/// Last pumping time in milliseconds
 unsigned long lastPumping = millis();
+/// Last measured moisture percent
 int lastPercent = 0;
 
+/// The LCD display
 LiquidCrystal lcd(RS, EN, D4, D5, D6, D7);
 
+/**
+ * Set up the pump relay, prepare the LCD screen and connect to WiFi
+ */
 void setup() {
-  Serial.begin(9600);           //  setup serial
-  connectWifi();
-  pinMode(CONTRAST_PIN, OUTPUT);  // sets the pin as output
-  pinMode(RELAY_PIN, OUTPUT);  // sets the pin as output
-  analogWrite(CONTRAST_PIN, CONTRAST);
+  Serial.begin(9600);
+  pinMode(RELAY_PIN, OUTPUT);
   digitalWrite(RELAY_PIN, LOW);
+  pinMode(CONTRAST_PIN, OUTPUT);
+  analogWrite(CONTRAST_PIN, CONTRAST);
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
   // Print a message to the LCD.
   lcd.print("Humidite :");
+  connectWifi();
 }
 
 /**
@@ -161,6 +175,11 @@ unsigned long pump(int duration) {
     return millis();
 }
 
+/**
+ * Measure the moisture level, write the result on the LCD screen and post the
+ * result to the Web service
+ * @result int, the measured moisture percent
+ */
 int measure() {
   int val = analogRead(MOISTURE_PIN);  // read the input pin
   int percent = constrain(map(val, MAX_DRY, MAX_WET,0, 100) , 0, 100);
@@ -175,14 +194,27 @@ int measure() {
   return percent;
 }
 
+/**
+ * Pause during @ref duration minutes
+ * @param duration the number of minutes to wait
+ */
 void minutes_delay(int duration) {
   delay(1000*60*duration);
 }
 
+/**
+ * Convert the @ref nb number of milliseconds to minutes
+ * @param nb unsigned long, the number of milliseconds
+ * @return unsigned long the number of minutes
+ */
 unsigned long millis2mn(unsigned long nb) {
   return nb/1000/60;
 }
 
+/**
+ * Write an alert message on the LCD screen and post an alert entry to the Web
+ * service
+ */
 void alert() {
   lcd.setCursor(0, 8);
   char buffer[10];
