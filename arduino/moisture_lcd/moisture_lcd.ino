@@ -43,7 +43,7 @@ const int LOOP_DELAY = 10;
 const int PUMP_DELAY = 60;
 // Will send an alert if moisture does not raise after a pumping in the
 // [ALERT_MIN, ALERT_MAX] interval in minutes
-const int ALERT_MIN = 5;
+const int ALERT_MIN = 1;
 const int ALERT_MAX = 20;
 // Duratio of a pumping event in seconds
 const int PUMPING_DURATION = 1;
@@ -188,6 +188,21 @@ void setup() {
   // Print a message to the LCD.
   lcd.print("Humidite :");
   connectWifi();
+
+
+  // Initial moisture level measure and send result
+  int percent = measure();
+
+  // if, moisture level is too low at start, pump some water
+  if (percent < THRESHOLD)
+  {
+    lastPumping = pump(PUMPING_DURATION);
+  }
+  lastPercent = percent;
+
+  // Wait 2 minutes to let the eventual first pumping to flow through the soil
+  minutes_delay(2);
+
 }
 
 /**
@@ -195,6 +210,11 @@ void setup() {
  * @return the time of this pumping event
  */
 unsigned long pump(int duration) {
+    assert(duration < 100);
+    char buffer[30];
+    sprintf (buffer, "Pumping %d second(s)", duration);
+    Serial.println(buffer);
+
     digitalWrite(RELAY_PIN, LOW);
     delay(duration*1000);
     digitalWrite(RELAY_PIN, HIGH);
@@ -258,6 +278,10 @@ void loop() {
 
   unsigned long currentTime = millis();
   unsigned long elapsed = millis2mn(currentTime - lastPumping);
+  char buffer[100];
+  sprintf (buffer, "In loop. Elapsed: %d mn. Percent: %3d %%. Last percent: %3d %%.", 
+            elapsed, percent, lastPercent);
+  Serial.println(buffer);
 
   // check if moisture level has raised since the last pumping (if it occured
   // at least ALERT_MIN mn ago (to let the water flow) and no more than
