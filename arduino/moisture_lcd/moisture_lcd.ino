@@ -37,16 +37,18 @@ const int MAX_WET = 485;
 const int MAX_DRY = 955;
 // Moisture percent under which pumping will be done
 const int THRESHOLD = 10;
-// Delay in minutes between two measures and other actions
-const int LOOP_DELAY = 10;
-// Will wait at least PUMP_DELAY minutes between two pumpings
-const int PUMP_DELAY = 60;
 // Will send an alert if moisture does not raise after a pumping in the
 // [ALERT_MIN, ALERT_MAX] interval in minutes
 const int ALERT_MIN = 1;
 const int ALERT_MAX = 20;
 // Duratio of a pumping event in seconds
 const int PUMPING_DURATION = 1;
+// Delay in minutes between two measures and other actions
+const int LOOP_DELAY = 10;
+//const int LOOP_DELAY = 1;
+// Will wait at least PUMP_DELAY minutes between two pumpings
+const int PUMP_DELAY = 60;
+//const int PUMP_DELAY = 1;
 
 
 ////////////////////////////////
@@ -83,6 +85,7 @@ void connectWifi() {
   IPAddress ip = WiFi.localIP();
   Serial.print("IP Address: ");
   Serial.println(ip);
+  Serial.println("");
 }
 
 /** Post a message to the /entries/ API endpoint of the Web service
@@ -175,37 +178,6 @@ int lastPercent = 0;
 LiquidCrystal lcd(RS, EN, D4, D5, D6, D7);
 
 /**
- * Set up the pump relay, prepare the LCD screen and connect to WiFi
- */
-void setup() {
-  Serial.begin(9600);
-  pinMode(RELAY_PIN, OUTPUT);
-  digitalWrite(RELAY_PIN, LOW);
-  pinMode(CONTRAST_PIN, OUTPUT);
-  analogWrite(CONTRAST_PIN, CONTRAST);
-  // set up the LCD's number of columns and rows:
-  lcd.begin(16, 2);
-  // Print a message to the LCD.
-  lcd.print("Humidite :");
-  connectWifi();
-
-
-  // Initial moisture level measure and send result
-  int percent = measure();
-
-  // if, moisture level is too low at start, pump some water
-  if (percent < THRESHOLD)
-  {
-    lastPumping = pump(PUMPING_DURATION);
-  }
-  lastPercent = percent;
-
-  // Wait 2 minutes to let the eventual first pumping to flow through the soil
-  minutes_delay(2);
-
-}
-
-/**
  * Pump water during @ref duration, send the event to the Web service and
  * @return the time of this pumping event
  */
@@ -215,9 +187,9 @@ unsigned long pump(int duration) {
     sprintf (buffer, "Pumping %d second(s)", duration);
     Serial.println(buffer);
 
-    digitalWrite(RELAY_PIN, LOW);
-    delay(duration*1000);
     digitalWrite(RELAY_PIN, HIGH);
+    delay(duration*1000);
+    digitalWrite(RELAY_PIN, LOW);
     postEntry("pump_time", duration);
     return millis();
 }
@@ -272,6 +244,38 @@ void alert() {
   postAlert();
 }
 
+/**
+ * Set up the pump relay, prepare the LCD screen and connect to WiFi
+ */
+void setup() {
+  pinMode(RELAY_PIN, OUTPUT);
+  digitalWrite(RELAY_PIN, LOW);
+  pinMode(CONTRAST_PIN, OUTPUT);
+  analogWrite(CONTRAST_PIN, CONTRAST);
+  Serial.begin(9600);
+  // set up the LCD's number of columns and rows:
+  lcd.begin(16, 2);
+  // Print a message to the LCD.
+  lcd.print("Humidite :");
+  Serial.println("");
+  connectWifi();
+
+/*
+  // Initial moisture level measure and send result
+  int percent = measure();
+
+  // if, moisture level is too low at start, pump some water
+  if (percent < THRESHOLD)
+  {
+    lastPumping = pump(PUMPING_DURATION);
+  }
+  lastPercent = percent;
+
+  // Wait 2 minutes to let the eventual first pumping to flow through the soil
+*/
+  delay(10000);
+}
+
 void loop() {
   // measure moisture level and send result
   int percent = measure();
@@ -283,18 +287,18 @@ void loop() {
             elapsed, percent, lastPercent);
   Serial.println(buffer);
 
+  // if, moisture level is too low, pump some water
+  if (percent <= THRESHOLD && elapsed >= PUMP_DELAY)
+  {
+    lastPumping = pump(PUMPING_DURATION);
+  }
   // check if moisture level has raised since the last pumping (if it occured
-  // at least ALERT_MIN mn ago (to let the water flow) and no more than
+  // at least ALE RT_MIN mn ago (to let the water flow) and no more than
   // ALERT_MAX mn ago (such that it has not enough time to dry at all). If it
   // has not raised, write a message on LCD and send an alert message to the
   // Web service.
-  if (elapsed > ALERT_MIN && elapsed <= ALERT_MAX && percent <= lastPercent) {
+  else if (elapsed >= ALERT_MIN && elapsed <= ALERT_MAX && percent <= lastPercent) {
     alert();
-  }
-  // if, moisture level is too low, pump some water
-  if (percent < THRESHOLD && elapsed > PUMP_DELAY)
-  {
-    lastPumping = pump(PUMPING_DURATION);
   }
   lastPercent = percent;
 
