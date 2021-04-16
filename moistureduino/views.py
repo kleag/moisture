@@ -22,6 +22,7 @@ from moistureduino.serializers import EntrySerializer
 from moistureduino.serializers import UserSerializer
 from moistureduino.permissions import IsOwnerOrReadOnly
 
+import moisture.settings as settings
 
 class EntryViewSet(viewsets.ModelViewSet):
     """
@@ -115,17 +116,19 @@ class EntryViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
-    @action(detail=False, permission_classes=[permissions.IsAuthenticated])
+    @action(methods=['post'], detail=False, permission_classes=[permissions.IsAuthenticated])
     def alert(self, request, *args, **kwargs):
-        email = EmailMessage(
-            'Moisture alert',
-            ("This is an alert from your plant moisture management system. It "
-             "is sent when the moisturing does not occur as expected. Please "
-             "check your system."),
-            'kleagg@gmail.com',
-            ['kleagg@gmail.com'],
-        )
-        email.send()
+        try:
+            email = EmailMessage(
+              'Moisture alert',
+              ("This is an alert from your plant moisture management system. It "
+              "is sent when the moisturing does not occur as expected. Please "
+              "check your system."),
+              settings.EMAIL_HOST_USER,
+              [settings.EMAIL_HOST_USER],)
+            email.send()
+        except Exception as e:
+            print(f"Catch exception {e} in alert mail sending")
         return Response()
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
