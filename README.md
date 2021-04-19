@@ -14,6 +14,6 @@ After testing on the above breadboard, I made this perfboard schema:
 
 I made some little changes during the soldering itself and got this result:
 
-  - ![Up of the soldered project](https://raw.githubusercontent.com/kleag/moisture/main/Fritzing/up.jpg)
-  - ![Down of the soldered project](https://raw.githubusercontent.com/kleag/moisture/main/Fritzing/down.jpg)
+  - ![Up of the soldered project](https://raw.githubusercontent.com/kleag/moisture/main/up.jpg)
+  - ![Down of the soldered project](https://raw.githubusercontent.com/kleag/moisture/main/down.jpg)
 
