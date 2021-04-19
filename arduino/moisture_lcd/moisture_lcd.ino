@@ -20,12 +20,12 @@ const int port = 8000;
 // Hardware parmeters
 
 // Pins used by your LCD screen
-const int RS = 0, EN = 1, D4 = 2, D5 = 3, D6 = 4, D7 = 5;
+const int RS = 1, EN = 2, D4 = 3, D5 = 4, D6 = 5, D7 = 6;
 // Other arduino pins used
-const int CONTRAST_PIN = 6;
-const int RELAY_PIN = 13;
-const int MOISTURE_PIN = A1;
+const int RELAY_PIN = 7;
+const int MOISTURE_PIN = A0;
 // LCD screen contrast
+const int CONTRAST_PIN = 0;
 const int CONTRAST = 20;
 
 ////////////////////////////////
@@ -39,16 +39,15 @@ const int MAX_DRY = 955;
 const int THRESHOLD = 10;
 // Will send an alert if moisture does not raise after a pumping in the
 // [ALERT_MIN, ALERT_MAX] interval in minutes
-const int ALERT_MIN = 1;
+const int ALERT_MIN = 5;
 const int ALERT_MAX = 20;
 // Duratio of a pumping event in seconds
 const int PUMPING_DURATION = 1;
 // Delay in minutes between two measures and other actions
-const int LOOP_DELAY = 10;
+const int LOOP_DELAY = 20;
 //const int LOOP_DELAY = 1;
 // Will wait at least PUMP_DELAY minutes between two pumpings
 const int PUMP_DELAY = 60;
-//const int PUMP_DELAY = 1;
 
 
 ////////////////////////////////
@@ -190,6 +189,7 @@ unsigned long pump(int duration) {
     digitalWrite(RELAY_PIN, HIGH);
     delay(duration*1000);
     digitalWrite(RELAY_PIN, LOW);
+    delay(500);
     postEntry("pump_time", duration);
     return millis();
 }
@@ -271,7 +271,7 @@ void setup() {
   }
   lastPercent = percent;
 
-  // Wait 2 minutes to let the eventual first pumping to flow through the soil
+  // Wait some time to let the eventual first pumping to flow through the soil
 */
   delay(10000);
 }
@@ -297,7 +297,8 @@ void loop() {
   // ALERT_MAX mn ago (such that it has not enough time to dry at all). If it
   // has not raised, write a message on LCD and send an alert message to the
   // Web service.
-  else if (elapsed >= ALERT_MIN && elapsed <= ALERT_MAX && percent <= lastPercent) {
+  else if (elapsed >= ALERT_MIN && elapsed <= ALERT_MAX 
+      && percent <= THRESHOLD && percent < lastPercent) {
     alert();
   }
   lastPercent = percent;
