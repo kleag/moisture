@@ -17,7 +17,7 @@ from .utils import load_environment_file
 load_environment_file('environment.ini')
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', None)
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split()
+ALLOWED_HOSTS = ['moisture.nsupdate.info', '192.168.1.21']
 DEBUG = os.environ.get('DJANGO_DEBUG', False)
 
 #SECRET_KEY = 'django-insecure-x75d$)^!&nrtnzf(6@5y+#10!8-=0qulwphg5ct2-ohfgs9!$i'
@@ -121,7 +121,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
 STATIC_URL = '/static/'
-
+STATIC_ROOT = '/home/gael/Projets/moisture/static/'
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 

@@ -1,3 +1,4 @@
+static/
 *.lock
 environment.ini
 arduino_secrets.h
