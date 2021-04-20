@@ -13,8 +13,8 @@
 // Web service parmeters
 
 // Set where you moistureduino Web service is listening
-const String serverAddress = "192.168.1.21";  // server address
-const int port = 8000;
+const String serverAddress = "moisture.nsupdate.info";  // server address
+const int port = 443;
 
 ////////////////////////////////
 // Hardware parmeters
@@ -60,8 +60,8 @@ const String pass = SECRET_PASS;    // your network password (use for WPA, or us
 const String login = SECRET_LOGIN;        // your Web service user login
 const String password = SECRET_PASSWORD;  // your Web service user password
 
-
-WiFiClient wifi;
+WiFiSSLClient wifi;
+// WiFiClient wifi;
 HttpClient client = HttpClient(wifi, serverAddress, port);
 const String contentType = "application/x-www-form-urlencoded";
 
@@ -283,7 +283,7 @@ void loop() {
   unsigned long currentTime = millis();
   unsigned long elapsed = millis2mn(currentTime - lastPumping);
   char buffer[100];
-  sprintf (buffer, "In loop. Elapsed: %d mn. Percent: %3d %%. Last percent: %3d %%.", 
+  sprintf (buffer, "In loop. Elapsed: %d mn. Percent: %3d %%. Last percent: %3d %%.",
             elapsed, percent, lastPercent);
   Serial.println(buffer);
 
@@ -297,7 +297,7 @@ void loop() {
   // ALERT_MAX mn ago (such that it has not enough time to dry at all). If it
   // has not raised, write a message on LCD and send an alert message to the
   // Web service.
-  else if (elapsed >= ALERT_MIN && elapsed <= ALERT_MAX 
+  else if (elapsed >= ALERT_MIN && elapsed <= ALERT_MAX
       && percent <= THRESHOLD && percent < lastPercent) {
     alert();
   }
