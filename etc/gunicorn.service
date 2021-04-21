@@ -1,0 +1,13 @@
+[Unit]
+Description=gunicorn daemon
+After=network.target
+
+[Service]
+User=gael
+Group=www-data
+WorkingDirectory=/home/gael/Projets/moisture
+
+ExecStart=/home/gael/miniconda3/envs/moisture/bin/gunicorn --access-logfile /var/log/gunicorn/access.log --error-logfile /var/log/gunicorn/error.log --workers 2 --bind 192.168.1.21:8000 moisture.wsgi:application
+
+[Install]
+WantedBy=multi-user.target
