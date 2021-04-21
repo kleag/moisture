@@ -1,6 +1,6 @@
 A plant soil moisture management application using Arduino MKR 1000, moisture sensor and 5V pump.
 
-This project contains the Arduino sketch in the [arduino folder](https://github.com/kleag/moisture/tree/main/arduino/moisture_lcd) and the [Django REST framework-based API](https://github.com/kleag/moisture/tree/main/). There is also example configuration files to deplay the application using nginx and gunicorn in [etc](https://github.com/kleag/moisture/tree/main/etc). It is up to you to learn how to deploy a Web service using Django, nginx and gunicorn but feel free to open issues if you have questions, suggestions or (constructive critics) on this project itself.
+This project contains the Arduino sketch in the [arduino folder](https://github.com/kleag/moisture/tree/main/arduino/moisture_lcd) and the [Django REST framework-based API](https://github.com/kleag/moisture/tree/main/). There is also example configuration files to deploy the application using nginx and gunicorn in [etc](https://github.com/kleag/moisture/tree/main/etc). It is up to you to learn how to deploy a Web service using Django, nginx and gunicorn but feel free to open issues if you have questions, suggestions or (constructive) critics on this project itself.
 
 
 ![Fritzing breadboard schema](https://raw.githubusercontent.com/kleag/moisture/main/Fritzing/Moisture_bb.png)
