@@ -13,8 +13,10 @@
 // Web service parmeters
 
 // Set where you moistureduino Web service is listening
-const String serverAddress = "moisture.nsupdate.info";  // server address
-const int port = 443;
+//const String serverAddress = "moisture.nsupdate.info";  // server address
+//const int port = 443;
+const String serverAddress = "192.168.1.21";  // server address
+const int port = 8000;
 
 ////////////////////////////////
 // Hardware parmeters
@@ -60,8 +62,8 @@ const String pass = SECRET_PASS;    // your network password (use for WPA, or us
 const String login = SECRET_LOGIN;        // your Web service user login
 const String password = SECRET_PASSWORD;  // your Web service user password
 
-WiFiSSLClient wifi;
-// WiFiClient wifi;
+//WiFiSSLClient wifi;
+WiFiClient wifi;
 HttpClient client = HttpClient(wifi, serverAddress, port);
 const String contentType = "application/x-www-form-urlencoded";
 
