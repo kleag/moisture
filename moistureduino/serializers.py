@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 
 from rest_framework import serializers
 from moistureduino.models import Entry
+from moistureduino.models import PumpingEntry
 
 
 class EntrySerializer(serializers.HyperlinkedModelSerializer):
@@ -12,7 +13,18 @@ class EntrySerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Entry
         fields = ['url', 'id', 'highlight', 'owner',
-                  'created', 'kind', 'value']
+                  'created', 'value']
+
+
+class PumpingEntrySerializer(serializers.HyperlinkedModelSerializer):
+    owner = serializers.ReadOnlyField(source='owner.username')
+    highlight = serializers.HyperlinkedIdentityField(
+        view_name='entry-highlight', format='html')
+
+    class Meta:
+        model = PumpingEntry
+        fields = ['url', 'id', 'highlight', 'owner',
+                  'created', 'value']
 
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):

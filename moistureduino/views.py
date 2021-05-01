@@ -19,7 +19,9 @@ from plotly.graph_objs import Bar
 import plotly.graph_objs as go
 
 from moistureduino.models import Entry
+from moistureduino.models import PumpingEntry
 from moistureduino.serializers import EntrySerializer
+from moistureduino.serializers import PumpingEntrySerializer
 from moistureduino.serializers import UserSerializer
 from moistureduino.permissions import IsOwnerOrReadOnly
 
@@ -63,7 +65,6 @@ class EntryViewSet(viewsets.ModelViewSet):
         for entry in entries:
             cells = []
             cells.append(f"<td>{entry.created}</td>")
-            cells.append(f"<td>{entry.kind}</td>")
             cells.append(f"<td>{entry.value}</td>")
             scells = ''.join(cells)
             row = f"  <tr>{scells}</tr>"
@@ -83,14 +84,13 @@ class EntryViewSet(viewsets.ModelViewSet):
         entries = Entry.objects.all()
         for i, entry in enumerate(entries):
             x_labels.append(entry.created)
-            if entry.kind == "moisture":
-                x_data.append(entry.created)
-                y_data.append(int(entry.value))
-            elif entry.kind == "pump_time":
+            x_data.append(entry.created)
+            y_data.append(int(entry.value))
+        pumping_entries = PumpingEntry.objects.all()
+        for i, entry in enumerate(pumping_entries):
                 xbar_data.append(entry.created)
                 ybar_data.append(int(entry.value))
-        layout = {'title': 'Moisture Events',
-                  'hovermode': 'closest'}
+        layout = {'title': 'Moisture Events', 'hovermode': 'closest'}
         layout['xaxis'] = {'title': 'Time', 'type': 'date', 'autorange': True}
         layout['yaxis1'] = {'title': 'Moisture %',
                             'type': 'linear',
@@ -140,6 +140,52 @@ class EntryViewSet(viewsets.ModelViewSet):
         except Exception as e:
             logger.error(f"Catch exception {e} in alert mail sending")
         return Response()
+
+
+class PumpingEntryViewSet(viewsets.ModelViewSet):
+    """
+    This viewset automatically provides `list`, `create`, `retrieve`,
+    `update` and `destroy` actions.
+
+    Additionally we also provide extra `highlight`, `table`, `plot` and
+    `reset` actions.
+    """
+    queryset = PumpingEntry.objects.all()
+    serializer_class = PumpingEntrySerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly,
+                          IsOwnerOrReadOnly]
+
+    @action(detail=False,
+            permission_classes=[permissions.IsAuthenticated])
+    def reset(self, request, *args, **kwargs):
+        entries = PumpingEntry.objects.all()
+        for entry in entries:
+            entry.delete()
+        api_root = reverse_lazy('api-root', request=request)
+        return Response(status=status.HTTP_204_NO_CONTENT, data=api_root)
+
+    @action(detail=True, renderer_classes=[renderers.StaticHTMLRenderer])
+    def highlight(self, request, *args, **kwargs):
+        entry = self.get_object()
+        return Response(entry.highlighted)
+
+    @action(detail=False, renderer_classes=[renderers.StaticHTMLRenderer])
+    def table(self, request, *args, **kwargs):
+        entries = PumpingEntry.objects.all()
+        rows = []
+        for entry in entries:
+            cells = []
+            cells.append(f"<td>{entry.created}</td>")
+            cells.append(f"<td>{entry.value}</td>")
+            scells = ''.join(cells)
+            row = f"  <tr>{scells}</tr>"
+            rows.append(row)
+        srow = '\n'.join(rows)
+        html = f"<html>\n<body>\n<table>\n{srow}\n</table>\n</body>\n</html>"
+        return Response(html)
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
