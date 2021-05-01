@@ -89,33 +89,25 @@ void connectWifi() {
   Serial.println("");
 }
 
-/** Post a message to the /entries/ API endpoint of the Web service
- * @param kind the type of the message. Should be one in [moisture, pump_time,
- * alert]
- * @param value int. Percent for moisture kind, duration in seconds for
- * pump_time and 0 for alert.
+/** Post a message to an API endpoint of the Web service
+ * @param url String. The path part of the url.
+ * @param data String. The data to post.
  * @return int. The status returned by the Web service
  */
-int postEntry(const String& kind, int value) {
-  assert(kind.length() < 30);
-  char buffer[30];
-  sprintf (buffer, "kind=%s&value=%d", kind.c_str(), value);
-
-  String postData = buffer;
-
+int post(const String& urlPath, const String& data) {
   Serial.print("making POST request: ");
-  Serial.println(postData);
+  Serial.println(data);
   client.beginRequest();
-  int post_result = client.post("/entries/");
+  int post_result = client.post(urlPath);
   Serial.print("Post url set: ");
   Serial.println(post_result);
   client.sendHeader("Content-Type", contentType);
-  client.sendHeader("Content-Length", postData.length());
+  client.sendHeader("Content-Length", data.length());
   Serial.println("Headers ready");
   client.sendBasicAuth(login, password); // send the username and password for authentication
   Serial.println("Basic auth sent");
   client.beginBody();
-  client.print(postData);
+  client.print(data);
   Serial.println("Body written");
   client.endRequest();
   Serial.println("Request sent");
@@ -131,31 +123,42 @@ int postEntry(const String& kind, int value) {
   return statusCode;
 }
 
+/** Post a message to the /entries/ API endpoint of the Web service
+ * @param raw int. The raw moisture level given by the sensor.
+ * @param value int. Percent of moisture.
+ * @return int. The status returned by the Web service
+ */
+int postEntry(int raw, int value) {
+  char buffer[30];
+  sprintf (buffer, "raw=%d&value=%d", raw, value);
+
+  String postData = buffer;
+  String urlPath = "/entries/";
+
+  return post(urlPath, postData);
+}
+
+/** Post a message to the /entries/ API endpoint of the Web service
+ * @param raw int. The raw moisture level given by the sensor.
+ * @param value int. Percent of moisture.
+ * @return int. The status returned by the Web service
+ */
+int postPumpingEntry(int duration) {
+  char buffer[30];
+  sprintf (buffer, "value=%d", duration);
+
+  String postData = buffer;
+  String urlPath = "/pumping_entries/";
+
+  return post(urlPath, postData);
+
+}
+
 int postAlert() {
   String postData;
+  String urlPath = "/alert/";
 
-  Serial.print("making POST alert request: ");
-  client.beginRequest();
-  int post_result = client.post("/entries/alert/");
-  Serial.print("Post url set: ");
-  Serial.println(post_result);
-  client.sendHeader("Content-Type", contentType);
-  client.sendHeader("Content-Length", postData.length());
-  Serial.println("Headers ready");
-  client.sendBasicAuth(login, password); // send the username and password for authentication
-  Serial.println("Basic auth sent");
-  client.beginBody();
-  client.print(postData);
-  Serial.println("Body written");
-  client.endRequest();
-  Serial.println("Request sent");
-
-
-  // read the status code and body of the response
-  int statusCode = client.responseStatusCode();
-  Serial.print("Status code: ");
-  Serial.println(statusCode);
-  return statusCode;
+  return post(urlPath, postData);
 }
 
 /** handle diagnostic informations given by assertion and abort program
@@ -192,7 +195,7 @@ unsigned long pump(int duration) {
     delay(duration*1000);
     digitalWrite(RELAY_PIN, LOW);
     delay(500);
-    postEntry("pump_time", duration);
+    postPumpingEntry(duration);
     minutes_delay(1);
     measure();
     return millis();
@@ -213,7 +216,7 @@ int measure() {
 
   Serial.println(buffer);
   lcd.print(buffer);
-  postEntry("moisture", percent);
+  postEntry(val, percent);
   return percent;
 }
 
@@ -244,7 +247,6 @@ void alert() {
   sprintf (buffer, "ALERT");
   Serial.println(buffer);
   lcd.print(buffer);
-  postEntry("alert", measure());
   postAlert();
 }
 
@@ -264,19 +266,6 @@ void setup() {
   Serial.println("");
   connectWifi();
 
-/*
-  delay(2000);
-  // Initial moisture level measure and send result
-  int percent = measure();
-  delay(2000);
-
-  // if, moisture level is too low at start, pump some water
-  if (percent < THRESHOLD)
-  {
-    lastPumping = pump(PUMPING_DURATION);
-  }
-  lastPercent = percent;
-*/
   // Wait some time to let the eventual first pumping to flow through the soil
   delay(2000);
 }
