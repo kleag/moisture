@@ -35,16 +35,16 @@ const int CONTRAST = 20;
 
 // MAX_DRY and MAX_WET: moisture sensor calibration. Check the measures given
 // by your sensor whith completely wet and fully dry soils
-const int MAX_WET = 485;
-const int MAX_DRY = 955;
+const int MAX_WET = 506;
+const int MAX_DRY = 867;
 // Moisture percent under which pumping will be done
-const int THRESHOLD = 10;
+const int THRESHOLD = 15;
 // Will send an alert if moisture does not raise after a pumping in the
 // [ALERT_MIN, ALERT_MAX] interval in minutes
-const int ALERT_MIN = 5;
-const int ALERT_MAX = 20;
+const int ALERT_MIN = 10;
+const int ALERT_MAX = 30;
 // Duratio of a pumping event in seconds
-const int PUMPING_DURATION = 1;
+const int PUMPING_DURATION = 5;
 // Delay in minutes between two measures and other actions
 const int LOOP_DELAY = 20;
 //const int LOOP_DELAY = 1;
@@ -193,6 +193,8 @@ unsigned long pump(int duration) {
     digitalWrite(RELAY_PIN, LOW);
     delay(500);
     postEntry("pump_time", duration);
+    minutes_delay(1);
+    measure();
     return millis();
 }
 
@@ -206,7 +208,7 @@ int measure() {
   int percent = constrain(map(val, MAX_DRY, MAX_WET,0, 100) , 0, 100);
   lcd.setCursor(0, 1);
   char buffer[10];
-  sprintf (buffer, "%3d %%", percent);
+  sprintf (buffer, "%4d, %3d %%", val, percent);
 //  sprintf (buffer, "%4d", val);
 
   Serial.println(buffer);
@@ -237,12 +239,12 @@ unsigned long millis2mn(unsigned long nb) {
  * service
  */
 void alert() {
-  lcd.setCursor(0, 8);
+  lcd.setCursor(0, 12);
   char buffer[10];
   sprintf (buffer, "ALERT");
   Serial.println(buffer);
   lcd.print(buffer);
-  postEntry("alert", 0);
+  postEntry("alert", measure());
   postAlert();
 }
 
@@ -263,8 +265,10 @@ void setup() {
   connectWifi();
 
 /*
+  delay(2000);
   // Initial moisture level measure and send result
   int percent = measure();
+  delay(2000);
 
   // if, moisture level is too low at start, pump some water
   if (percent < THRESHOLD)
@@ -272,10 +276,9 @@ void setup() {
     lastPumping = pump(PUMPING_DURATION);
   }
   lastPercent = percent;
-
-  // Wait some time to let the eventual first pumping to flow through the soil
 */
-  delay(10000);
+  // Wait some time to let the eventual first pumping to flow through the soil
+  delay(2000);
 }
 
 void loop() {
@@ -300,7 +303,7 @@ void loop() {
   // has not raised, write a message on LCD and send an alert message to the
   // Web service.
   else if (elapsed >= ALERT_MIN && elapsed <= ALERT_MAX
-      && percent <= THRESHOLD && percent < lastPercent) {
+      && percent <= THRESHOLD && percent <= lastPercent) {
     alert();
   }
   lastPercent = percent;
