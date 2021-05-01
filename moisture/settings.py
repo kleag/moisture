@@ -11,8 +11,11 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 import os
 import sys
-
+import logging
 from .utils import load_environment_file
+
+# Get an instance of a logger
+logger = logging.getLogger(__name__)
 
 load_environment_file('environment.ini')
 
@@ -20,14 +23,30 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', None)
 ALLOWED_HOSTS = ['moisture.nsupdate.info', '192.168.1.21']
 DEBUG = os.environ.get('DJANGO_DEBUG', False)
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 #SECRET_KEY = 'django-insecure-x75d$)^!&nrtnzf(6@5y+#10!8-=0qulwphg5ct2-ohfgs9!$i'
-#DEBUG = True
 
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+import os
 
 # Application definition
 
@@ -146,11 +165,11 @@ EMAIL_HOST_USER = os.environ.get('EMAIL_USER', "")
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_PASSWORD', "")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
-print(f"Email settings:")
-print(f"EMAIL_BACKEND: {EMAIL_BACKEND}")
-print(f"EMAIL_HOST: {EMAIL_HOST}")
-print(f"EMAIL_PORT: {EMAIL_PORT}")
-print(f"EMAIL_USE_TLS: {EMAIL_USE_TLS}")
-print(f"EMAIL_HOST_USER: {EMAIL_HOST_USER}")
-print(f"EMAIL_HOST_PASSWORD: *******")
-print(f"DEFAULT_FROM_EMAIL: {DEFAULT_FROM_EMAIL}")
+logger.info(f"Email settings:")
+logger.info(f"EMAIL_BACKEND: {EMAIL_BACKEND}")
+logger.info(f"EMAIL_HOST: {EMAIL_HOST}")
+logger.info(f"EMAIL_PORT: {EMAIL_PORT}")
+logger.info(f"EMAIL_USE_TLS: {EMAIL_USE_TLS}")
+logger.info(f"EMAIL_HOST_USER: {EMAIL_HOST_USER}")
+logger.info(f"EMAIL_HOST_PASSWORD: *******")
+logger.info(f"DEFAULT_FROM_EMAIL: {DEFAULT_FROM_EMAIL}")

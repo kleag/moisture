@@ -1,3 +1,4 @@
+import logging
 from django.core.mail import EmailMessage
 from django.contrib.auth.models import User
 from rest_framework import mixins
@@ -23,6 +24,10 @@ from moistureduino.serializers import UserSerializer
 from moistureduino.permissions import IsOwnerOrReadOnly
 
 import moisture.settings as settings
+
+# Get an instance of a logger
+logger = logging.getLogger(__name__)
+
 
 class EntryViewSet(viewsets.ModelViewSet):
     """
@@ -69,7 +74,7 @@ class EntryViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, renderer_classes=[renderers.TemplateHTMLRenderer])
     def plot(self, request, *args, **kwargs):
-
+        logger.debug("try")
         x_labels = []
         x_data = []
         y_data = []
@@ -81,8 +86,6 @@ class EntryViewSet(viewsets.ModelViewSet):
             if entry.kind == "moisture":
                 x_data.append(entry.created)
                 y_data.append(int(entry.value))
-                xbar_data.append(entry.created)
-                ybar_data.append(0)
             elif entry.kind == "pump_time":
                 xbar_data.append(entry.created)
                 ybar_data.append(int(entry.value))
@@ -105,10 +108,11 @@ class EntryViewSet(viewsets.ModelViewSet):
                             'tickfont': {'color': 'red'}}
 
         traces = [Scatter(x=x_data, y=y_data,
-                         mode='lines', name='moisture level',
-                         opacity=0.8, marker_color='green'),
-                 Bar(x=xbar_data, y=ybar_data, name='pumping time',
-                     yaxis='y2')]
+                          mode='lines', name='moisture level',
+                          opacity=0.8, marker_color='green'),
+                  Scatter(x=xbar_data, y=ybar_data,
+                          mode='markers', marker_size=10, name='pumping time',
+                          yaxis='y2')]
         fig = go.Figure(data=traces, layout=layout)
         plot_div = plot(fig, output_type='div', include_plotlyjs=False)
         return Response({'plot_div': plot_div}, template_name='plot.html')
@@ -116,20 +120,27 @@ class EntryViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
-    @action(methods=['post'], detail=False, permission_classes=[permissions.IsAuthenticated])
+    @action(methods=['post'], detail=False,
+            permission_classes=[permissions.IsAuthenticated])
     def alert(self, request, *args, **kwargs):
         try:
             email = EmailMessage(
               'Moisture alert',
-              ("This is an alert from your plant moisture management system. It "
-              "is sent when the moisturing does not occur as expected. Please "
-              "check your system."),
+              ("This is an alert from your plant moisture management system. "
+               "It is sent when the moisturing does not occur as expected. "
+               "Please check your system."),
               settings.EMAIL_HOST_USER,
               [settings.EMAIL_HOST_USER],)
+            logger.debug(f"Sending alert mail {settings.EMAIL_BACKEND}, "
+                         f"{settings.EMAIL_HOST}, {settings.EMAIL_PORT}, "
+                         f"{settings.EMAIL_USE_TLS}, "
+                         f"{settings.EMAIL_HOST_USER}, XXXXX, "
+                         f"{settings.DEFAULT_FROM_EMAIL}")
             email.send()
         except Exception as e:
-            print(f"Catch exception {e} in alert mail sending")
+            logger.error(f"Catch exception {e} in alert mail sending")
         return Response()
+
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     """
