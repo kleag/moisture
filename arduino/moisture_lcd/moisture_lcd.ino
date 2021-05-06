@@ -29,6 +29,7 @@ const int MOISTURE_PIN = A0;
 // LCD screen contrast
 const int CONTRAST_PIN = 0;
 const int CONTRAST = 20;
+const int MANUAL_PUMP_BUTTON_PIN = 8;
 
 ////////////////////////////////
 // Software parameters
@@ -45,9 +46,8 @@ const int ALERT_MIN = 10;
 const int ALERT_MAX = 30;
 // Duratio of a pumping event in seconds
 const int PUMPING_DURATION = 5;
-// Delay in minutes between two measures and other actions
-const int LOOP_DELAY = 20;
-//const int LOOP_DELAY = 1;
+// Delay in minutes between two measures and other actions in normal operation
+const int LOOP_DELAY = 20*60*1000;
 // Will wait at least PUMP_DELAY minutes between two pumpings
 const int PUMP_DELAY = 60;
 
@@ -173,6 +173,8 @@ void __assert(const char *__func, const char *__file, int __lineno, const char *
     abort();
 }
 
+unsigned int loopDelay = LOOP_DELAY;
+
 /// Last pumping time in milliseconds
 unsigned long lastPumping = millis();
 /// Last measured moisture percent
@@ -250,10 +252,79 @@ void alert() {
   postAlert();
 }
 
+#define switched                            true // value if the button switch has been pressed
+#define triggered                           true // controls interrupt handler
+#define interrupt_trigger_type            RISING // interrupt triggered on a RISING input
+#define debounce                              10 // time to wait in milli secs
+
+volatile  bool interrupt_process_status = {
+  !triggered                                     // start with no switch press pending, ie false (!triggered)
+};
+bool initialisation_complete =            false; // inhibit any interrupts until initialisation is complete
+
+//
+// ISR for handling interrupt triggers arising from associated button switch
+//
+void button_interrupt_handler()
+{
+  if (initialisation_complete == true)
+  { //  all variables are initialised so we are okay to continue to process this interrupt
+    if (interrupt_process_status == !triggered) {
+      // new interrupt so okay start a new button read process -
+      // now need to wait for button release plus debounce period to elapse
+      // this will be done in the button_read function
+      if (digitalRead(MANUAL_PUMP_BUTTON_PIN) == HIGH) {
+        // button pressed, so we can start the read on/off + debounce cycle wich will
+        // be completed by the button_read() function.
+        interrupt_process_status = triggered;  // keep this ISR 'quiet' until button read fully completed
+        loopDelay = 500; // we will loop quickly until switching and action are done
+      }
+    }
+  }
+} // end of button_interrupt_handler
+
+bool read_button() {
+  int button_reading;
+  // static variables because we need to retain old values between function calls
+  static bool     switching_pending = false;
+  static long int elapse_timer;
+  if (interrupt_process_status == triggered) {
+    // interrupt has been raised on this button so now need to complete
+    // the button read process, ie wait until it has been released
+    // and debounce time elapsed
+    button_reading = digitalRead(MANUAL_PUMP_BUTTON_PIN);
+    if (button_reading == HIGH) {
+      // switch is pressed, so start/restart wait for button relealse, plus end of debounce process
+      switching_pending = true;
+      elapse_timer = millis(); // start elapse timing for debounce checking
+    }
+    if (switching_pending && button_reading == LOW) {
+      // switch was pressed, now released, so check if debounce time elapsed
+      if (millis() - elapse_timer >= debounce) {
+        // dounce time elapsed, so switch press cycle complete
+        switching_pending = false;             // reset for next button press interrupt cycle
+        interrupt_process_status = !triggered; // reopen ISR for business now button on/off/debounce cycle complete
+        return switched;                       // advise that switch has been pressed
+      }
+    }
+  }
+  return !switched; // either no press request or debounce period not elapsed
+} // end of read_button function
+
+void manualPump() {
+  Serial.println("manualPump");
+  pump(5);
+}
+
 /**
  * Set up the pump relay, prepare the LCD screen and connect to WiFi
  */
 void setup() {
+  pinMode(MANUAL_PUMP_BUTTON_PIN, INPUT);
+  attachInterrupt(digitalPinToInterrupt(MANUAL_PUMP_BUTTON_PIN),
+                  button_interrupt_handler,
+                  interrupt_trigger_type);
+
   pinMode(RELAY_PIN, OUTPUT);
   digitalWrite(RELAY_PIN, LOW);
   pinMode(CONTRAST_PIN, OUTPUT);
@@ -268,34 +339,43 @@ void setup() {
 
   // Wait some time to let the eventual first pumping to flow through the soil
   delay(2000);
+  initialisation_complete = true; // open interrupt processing for business
 }
 
 void loop() {
-  // measure moisture level and send result
-  int percent = measure();
-
-  unsigned long currentTime = millis();
-  unsigned long elapsed = millis2mn(currentTime - lastPumping);
-  char buffer[100];
-  sprintf (buffer, "In loop. Elapsed: %d mn. Percent: %3d %%. Last percent: %3d %%.",
-            elapsed, percent, lastPercent);
-  Serial.println(buffer);
-
-  // if, moisture level is too low, pump some water
-  if (percent <= THRESHOLD && elapsed >= PUMP_DELAY)
-  {
-    lastPumping = pump(PUMPING_DURATION);
+  // test buton switch and process if pressed
+  if (read_button() == switched) {
+    Serial.println("Manual pump button has been pressed");
+    // button on/off cycle now complete,
+    manualPump();
+    loopDelay = LOOP_DELAY; // switch back to default delay 
   }
-  // check if moisture level has raised since the last pumping (if it occured
-  // at least ALE RT_MIN mn ago (to let the water flow) and no more than
-  // ALERT_MAX mn ago (such that it has not enough time to dry at all). If it
-  // has not raised, write a message on LCD and send an alert message to the
-  // Web service.
-  else if (elapsed >= ALERT_MIN && elapsed <= ALERT_MAX
-      && percent <= THRESHOLD && percent <= lastPercent) {
-    alert();
+  else {
+    // measure moisture level and send result
+    int percent = measure();
+  
+    unsigned long currentTime = millis();
+    unsigned long elapsed = millis2mn(currentTime - lastPumping);
+    char buffer[100];
+    sprintf (buffer, "In loop. Elapsed: %d mn. Percent: %3d %%. Last percent: %3d %%.",
+              elapsed, percent, lastPercent);
+    Serial.println(buffer);
+  
+    // if, moisture level is too low, pump some water
+    if (percent <= THRESHOLD && elapsed >= PUMP_DELAY)
+    {
+      lastPumping = pump(PUMPING_DURATION);
+    }
+    // check if moisture level has raised since the last pumping (if it occured
+    // at least ALE RT_MIN mn ago (to let the water flow) and no more than
+    // ALERT_MAX mn ago (such that it has not enough time to dry at all). If it
+    // has not raised, write a message on LCD and send an alert message to the
+    // Web service.
+    else if (elapsed >= ALERT_MIN && elapsed <= ALERT_MAX
+        && percent <= THRESHOLD && percent <= lastPercent) {
+      alert();
+    }
+    lastPercent = percent;
   }
-  lastPercent = percent;
-
-  minutes_delay(LOOP_DELAY);
+  delay(loopDelay);
 }
