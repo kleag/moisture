@@ -73,6 +73,17 @@ class EntryViewSet(viewsets.ModelViewSet):
         html = f"<html>\n<body>\n<table>\n{srow}\n</table>\n</body>\n</html>"
         return Response(html)
 
+    @action(detail=False, renderer_classes=[renderers.StaticHTMLRenderer])
+    def cleanup(self, request, *args, **kwargs):
+        entries = Entry.objects.all()
+        nb_deleted = 0
+        for entry in entries:
+            if entry.raw == -1:
+                entry.delete()
+                nb_deleted += 1
+        html = f"<html>\n<body>\n{nb nb_deleted} invalid entries have been removed\n</body>\n</html>"
+        return Response(html)
+
     @action(detail=False, renderer_classes=[renderers.TemplateHTMLRenderer])
     def plot(self, request, *args, **kwargs):
         logger.debug("try")
