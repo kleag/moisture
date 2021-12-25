@@ -19,3 +19,16 @@ I made some little changes during the soldering itself and got this result:
   - ![Up of the soldered project](https://raw.githubusercontent.com/kleag/moisture/main/up.jpg)
   - ![Down of the soldered project](https://raw.githubusercontent.com/kleag/moisture/main/down.jpg)
 
+
+# Deployment
+
+Starting the service in deploy mode:
+```bash
+$ sudo service gunicorn start
+```
+
+Starting the service in debug mode:
+```bash
+$ source /home/gael/miniconda3/bin/activate moisture
+$ python manage.py runserver
+```
