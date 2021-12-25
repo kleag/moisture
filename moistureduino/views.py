@@ -1,6 +1,8 @@
 import logging
 from django.core.mail import EmailMessage
 from django.contrib.auth.models import User
+from django.utils import datetime
+from django.utils import timezone
 from rest_framework import mixins
 from rest_framework import generics
 from rest_framework import permissions
@@ -28,6 +30,7 @@ from moistureduino.serializers import UserSerializer
 from moistureduino.permissions import IsOwnerOrReadOnly
 
 import moisture.settings as settings
+
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -149,13 +152,20 @@ class EntryViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, renderer_classes=[renderers.TemplateHTMLRenderer])
     def plot(self, request, *args, **kwargs):
+         now = timezone.now()
+         delta = datetime.timedelta(days=61)
+         limit = now - delta
+
         logger.debug("try")
         x_labels = []
         x_data = []
         y_data = []
         xbar_data = []
         ybar_data = []
-        entries = Entry.objects.all()
+                diff= now - self.pub_date
+
+        entries = Entry.objects.filter(created>limit)
+        #entries = Entry.objects.all()
         for i, entry in enumerate(entries):
             x_labels.append(entry.created)
             x_data.append(entry.created)
