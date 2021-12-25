@@ -1,7 +1,8 @@
 import logging
 from django.core.mail import EmailMessage
 from django.contrib.auth.models import User
-from django.utils import datetime
+
+import datetime
 from django.utils import timezone
 from rest_framework import mixins
 from rest_framework import generics
@@ -152,9 +153,9 @@ class EntryViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, renderer_classes=[renderers.TemplateHTMLRenderer])
     def plot(self, request, *args, **kwargs):
-         now = timezone.now()
-         delta = datetime.timedelta(days=61)
-         limit = now - delta
+        now = timezone.now()
+        delta = datetime.timedelta(days=61)
+        limit = now - delta
 
         logger.debug("try")
         x_labels = []
@@ -162,17 +163,19 @@ class EntryViewSet(viewsets.ModelViewSet):
         y_data = []
         xbar_data = []
         ybar_data = []
-                diff= now - self.pub_date
 
-        entries = Entry.objects.filter(created>limit)
+        entries = Entry.objects.filter(created__gt=limit)
         #entries = Entry.objects.all()
         for i, entry in enumerate(entries):
-            x_labels.append(entry.created)
-            x_data.append(entry.created)
+            local_dt = timezone.localtime(entry.created)
+            x_labels.append(local_dt)
+            x_data.append(local_dt)
             y_data.append(int(entry.value))
-        pumping_entries = PumpingEntry.objects.all()
+        pumping_entries = PumpingEntry.objects.filter(created__gt=limit)
+        #pumping_entries = PumpingEntry.objects.all()
         for i, entry in enumerate(pumping_entries):
-                xbar_data.append(entry.created)
+                local_dt = timezone.localtime(entry.created)
+                xbar_data.append(local_dt)
                 ybar_data.append(int(entry.value))
         layout = {'title': 'Moisture Events', 'hovermode': 'closest'}
         layout['xaxis'] = {'title': 'Time', 'type': 'date', 'autorange': True}
